@@ -1,7 +1,7 @@
 import XCTest
-@testable import Chip8
+@testable import Swift8
 
-final class Chip8Tests: XCTestCase {
+final class Swift8Tests: XCTestCase {
     func testNibbleToByteConversions() {
         let original_byte: UInt8 = 0b10101111
         let (top_nibble, bottom_nibble) = byte_to_nibbles(byte: original_byte)

@@ -4,7 +4,7 @@
 import PackageDescription
 
 let package = Package(
-    name: "Chip8",
+    name: "Swift8",
     dependencies: [
         // .package(url: "https://github.com/apple/swift-testing.git", branch: "main")
     ],
@@ -12,13 +12,13 @@ let package = Package(
         // Targets are the basic building blocks of a package, defining a module or a test suite.
         // Targets can depend on other targets in this package and products from dependencies.
         .executableTarget(
-            name: "Chip8",
+            name: "Swift8",
             path: "Sources"
         ),
         .testTarget(
-            name: "Chip8Tests",
+            name: "Swift8Tests",
             dependencies: [
-                "Chip8",
+                "Swift8",
                 // .product(name: "Testing", package: "swift-testing")
             ],
             path: "Tests"

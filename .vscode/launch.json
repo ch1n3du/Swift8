@@ -23,6 +23,30 @@
             "name": "Release Chip8",
             "program": "${workspaceFolder:Chip8}/.build/release/Chip8",
             "preLaunchTask": "swift: Build Release Chip8"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "sourceLanguages": [
+                "swift"
+            ],
+            "args": [],
+            "cwd": "${workspaceFolder:Chip8}",
+            "name": "Debug Swift8",
+            "program": "${workspaceFolder:Chip8}/.build/debug/Swift8",
+            "preLaunchTask": "swift: Build Debug Swift8"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "sourceLanguages": [
+                "swift"
+            ],
+            "args": [],
+            "cwd": "${workspaceFolder:Chip8}",
+            "name": "Release Swift8",
+            "program": "${workspaceFolder:Chip8}/.build/release/Swift8",
+            "preLaunchTask": "swift: Build Release Swift8"
         }
     ]
 }
