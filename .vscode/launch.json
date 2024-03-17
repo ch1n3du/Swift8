@@ -1,0 +1,28 @@
+{
+    "configurations": [
+        {
+            "type": "lldb",
+            "request": "launch",
+            "sourceLanguages": [
+                "swift"
+            ],
+            "args": [],
+            "cwd": "${workspaceFolder:Chip8}",
+            "name": "Debug Chip8",
+            "program": "${workspaceFolder:Chip8}/.build/debug/Chip8",
+            "preLaunchTask": "swift: Build Debug Chip8"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "sourceLanguages": [
+                "swift"
+            ],
+            "args": [],
+            "cwd": "${workspaceFolder:Chip8}",
+            "name": "Release Chip8",
+            "program": "${workspaceFolder:Chip8}/.build/release/Chip8",
+            "preLaunchTask": "swift: Build Release Chip8"
+        }
+    ]
+}
