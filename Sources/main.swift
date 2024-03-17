@@ -54,7 +54,6 @@ class Chip8 {
             sound_timer -= 1
         }
         try self.execute_current_instruction()
-        self.increment_program_counter()
     }
 
     func execute_current_instruction() throws {
@@ -69,18 +68,15 @@ class Chip8 {
         // Execute the instruction
         switch (nibble_1, nibble_2, nibble_3, nibble_4) {
             case (0, 0, 0xE, 0):
-                print("We got them boys")
+                self.clear_display_instruction()
+            case (0, 0, 0xE, 0xE):
+                try self.return_instruction()
+            case (1, nibble_2, nibble_3, nibble_4):
+                try self.jump_instruction(nibble_1: nibble_2, nibble_2: nibble_3, nibble_3: nibble_4)
+            case (2, nibble_2, nibble_3, nibble_4):
+                try self.call_instruction(nibble_1: nibble_2, nibble_2: nibble_3, nibble_3: nibble_4)
             default:
-                let nibbles_hex = "(\(byte_to_hex_string(nibble_1)), \(byte_to_hex_string(nibble_2)), \(byte_to_hex_string(nibble_3)), \(byte_to_hex_string(nibble_4)))"
-                let bytes_hex = "(\(byte_to_hex_string(byte_1)), \(byte_to_hex_string(byte_2)))"
-
-                print("\nEncountered Unimplemented Instruction \(nibbles_hex)")
-                print("===================================================")
-                print("| Current Instruction (Bytes)   | Raw(\(byte_1), \(byte_2))      Hex\(bytes_hex)")
-                print("| Current Instruction (Nibbles) | Raw(\(nibble_1), \(nibble_2), \(nibble_3), \(nibble_4)) Hex\(nibbles_hex)")
-                print("| Program Counter               | \(self.program_counter)")
-                print("| Stack Pointer                 | \(self.stack_pointer)")
-                print("| General Registers             | \(format_v_registers(registers:self.v_registers))")
+                self.print_debug_output(byte_1: byte_1, byte_2: byte_2)
         }
     }
 
@@ -89,6 +85,7 @@ class Chip8 {
     // 00E0 - CLS
     func clear_display_instruction() {
         self.clear_internal_display()
+        self.increment_program_counter()
     }
 
     // TODO: Test
@@ -109,7 +106,8 @@ class Chip8 {
     // 2nnn - CALL addr
     func call_instruction(nibble_1: UInt8, nibble_2: UInt8, nibble_3: UInt8) throws {
         let address_of_subroutine_to_call = nibbles_to_address(nibble_1: nibble_1, nibble_2: nibble_2, nibble_3: nibble_3)
-        try self.push_address_to_stack(address: address_of_subroutine_to_call)
+        try self.push_address_to_stack(address: self.program_counter)
+        self.program_counter = address_of_subroutine_to_call
     }
 
     // 3xkk - SE Vx, byte
@@ -120,6 +118,7 @@ class Chip8 {
         if value_at_register_x == byte {
             self.increment_program_counter()
         }
+        self.increment_program_counter()
     }
 
     // 4xkk - SNE Vx, byte
@@ -130,6 +129,7 @@ class Chip8 {
         if value_at_register_x != byte {
             self.increment_program_counter()
         }
+        self.increment_program_counter()
     }
 
     // 5xy0 - SE Vx, Vy
@@ -140,18 +140,21 @@ class Chip8 {
         if value_at_register_x == value_at_register_y {
             self.increment_program_counter()
         }
+        self.increment_program_counter()
     }
 
     // 6xkk - LD Vx, byte
     func load_byte_into_register_instruction(index_x: UInt8, nibble_1: UInt8, nibble_2: UInt8) {
         let byte = nibbles_to_byte(top: nibble_1, bottom: nibble_2)
         self.v_registers[Int(index_x)] = byte
+        self.increment_program_counter()
     }
 
     // 7xkk - ADD Vx, byte
     func increment_register_by_byte_instruction(index_x: UInt8, nibble_1: UInt8, nibble_2: UInt8) {
         let byte = nibbles_to_byte(top: nibble_1, bottom: nibble_2)
         self.v_registers[Int(index_x)] += byte
+        self.increment_program_counter()
     }
 
     // 8xy0 = LD Vx, Vy
@@ -160,6 +163,7 @@ class Chip8 {
         let value_at_register_y = self.v_registers[Int(index_y)]
 
         self.v_registers[Int(index_x)] = value_at_register_y
+        self.increment_program_counter()
     }
 
     // 8xy1 = OR Vx, Vy
@@ -168,6 +172,7 @@ class Chip8 {
         let value_at_register_y = self.v_registers[Int(index_y)]
 
         self.v_registers[Int(index_x)] = value_at_register_x | value_at_register_y
+        self.increment_program_counter()
     }
 
     // 8xy2 = AND Vx, Vy
@@ -176,6 +181,7 @@ class Chip8 {
         let value_at_register_y = self.v_registers[Int(index_y)]
 
         self.v_registers[Int(index_x)] = value_at_register_x & value_at_register_y
+        self.increment_program_counter()
     }
 
     // 8xy3 = XOR Vx, Vy
@@ -184,6 +190,7 @@ class Chip8 {
         let value_at_register_y = self.v_registers[Int(index_y)]
 
         self.v_registers[Int(index_x)] = value_at_register_x ^ value_at_register_y
+        self.increment_program_counter()
     }
 
     // 8xy4 = ADD Vx, Vy
@@ -198,6 +205,7 @@ class Chip8 {
         }
 
         self.v_registers[Int(index_x)] = UInt8(value_at_register_x.addingReportingOverflow(value_at_register_y).partialValue)
+        self.increment_program_counter()
     }
 
     // 8xy5 = SUB Vx, Vy
@@ -212,6 +220,7 @@ class Chip8 {
         }
 
         self.v_registers[Int(index_x)] = UInt8(value_at_register_x.subtractingReportingOverflow(value_at_register_y).partialValue)
+        self.increment_program_counter()
     }
 
     // 8xy6 = SHR Vx {, Vy}
@@ -225,6 +234,7 @@ class Chip8 {
         }
 
         self.v_registers[Int(index_x)] = value_at_register_x / 2
+        self.increment_program_counter()
     }
 
     // 8xy7 = SUBN Vx, Vy
@@ -239,6 +249,7 @@ class Chip8 {
         }
 
         self.v_registers[Int(index_x)] = UInt8(value_at_register_y.subtractingReportingOverflow(value_at_register_x).partialValue)
+        self.increment_program_counter()
     }
 
     // 9xy0 - SE Vx, Vy
@@ -249,6 +260,7 @@ class Chip8 {
         if value_at_register_x != value_at_register_y {
             self.increment_program_counter()
         }
+        self.increment_program_counter()
     }
 
     // TODO: Test
@@ -256,6 +268,7 @@ class Chip8 {
     func load_address_into_register_i(nibble_1: UInt8, nibble_2: UInt8, nibble_3: UInt8) throws {
         let address: UInt16 = nibbles_to_address(nibble_1: nibble_1, nibble_2: nibble_2, nibble_3: nibble_3)
         self.register_i = address
+        self.increment_program_counter()
     }
 
     // Bnnn - JP V0, addr
@@ -271,6 +284,7 @@ class Chip8 {
         let random_number: UInt8 = 54
 
         self.v_registers[Int(index_x)] = random_number & byte
+        self.increment_program_counter()
     }
 
     // Dxyn - DRW Vx, Vy, nibble(n)
@@ -291,6 +305,7 @@ class Chip8 {
     // Fx07 - LD Vx, DT
     func load_delay_timer_into_register_x_instruction(index_x: UInt8) {
         self.v_registers[Int(index_x)] = self.delay_timer
+        self.increment_program_counter()
     }
 
     // Utility Methods
@@ -362,6 +377,23 @@ class Chip8 {
         self.stack[Int(self.stack_pointer) - 1] = address
         self.stack_pointer += 1
     }
+
+    func print_debug_output(byte_1: UInt8, byte_2: UInt8) {
+        // Decode the instruction
+        let (nibble_1, nibble_2) = byte_to_nibbles(byte: byte_1)
+        let (nibble_3, nibble_4) = byte_to_nibbles(byte: byte_2)
+
+        let nibbles_hex = "(\(byte_to_hex_string(nibble_1)), \(byte_to_hex_string(nibble_2)), \(byte_to_hex_string(nibble_3)), \(byte_to_hex_string(nibble_4)))"
+        let bytes_hex = "(\(byte_to_hex_string(byte_1)), \(byte_to_hex_string(byte_2)))"
+
+        print("\nEncountered Unimplemented Instruction \(nibbles_hex)")
+        print("===================================================")
+        print("| Current Instruction (Bytes)   | Raw(\(byte_1), \(byte_2))      Hex\(bytes_hex)")
+        print("| Current Instruction (Nibbles) | Raw(\(nibble_1), \(nibble_2), \(nibble_3), \(nibble_4)) Hex\(nibbles_hex)")
+        print("| Program Counter               | \(self.program_counter)")
+        print("| Stack Pointer                 | \(self.stack_pointer)")
+        print("| General Registers             | \(format_v_registers(registers:self.v_registers))")
+    }
 }
 
 // ! VF register shouldn't be used
@@ -385,19 +417,18 @@ public func handleChip8Error(error: Chip8Error) {
     }
 }
 
+let (byte_1_, byte_2_): (UInt8, UInt8) = (0x2A, 0xBC)
+let (nibble_1_, nibble_2_) = byte_to_nibbles(byte: byte_1_)
+let (nibble_3_, nibble_4_) = byte_to_nibbles(byte: byte_2_)
 
-let dummy_rom = [
-    nibbles_to_byte(top: 0, bottom: 0), nibbles_to_byte(top: 0xE, bottom: 0)
-]
-// print("Dummy ROM: \(dummy_rom)")
+var test_chip8 = setup_chip8_and_execute_timestep(
+    rom: nibbles_to_rom(nibble_1_, nibble_2_, nibble_3_, nibble_4_),
+    preset_stack: nil,
+    preset_display_pixels: nil, 
+    preset_v_registers: nil,
+    preset_register_i: nil,
+    preset_delay_timer: nil,
+    preset_sound_timer: nil
+)
 
-var chipper_ = Chip8.init()
-do {
-    try chipper_.load_rom(rom_bytes: dummy_rom)
-    try chipper_.execute_timestep()
-} catch let chip8_error as Chip8Error{
-    handleChip8Error(error: chip8_error)
-}
-
-// let addr = nibbles_to_address(nibble_1: 0xF, nibble_2: 0xF, nibble_3: 0x0)
-// print("0x\(String(addr, radix: 16, uppercase: true))")
+test_chip8.print_debug_output(byte_1: byte_1_, byte_2: byte_2_)
